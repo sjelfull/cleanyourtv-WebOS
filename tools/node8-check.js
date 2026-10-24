@@ -112,7 +112,8 @@ const fake = (url, method) => { const res = { code: 0, out: '', writeHead(c) { t
     send(null); }).listen(0, '127.0.0.1');
   await new Promise(r => api.on('listening', r));
   process.env.CYTV_API = 'http://127.0.0.1:' + api.address().port;
-  fs.writeFileSync(path.join(process.env.CYTV_DIR, 'source'), 'o/r main\n');
+  fs.writeFileSync(path.join(process.env.CYTV_DIR, 'source'), 'evil/x main\n');   // fork: ignored, the requests must still go to o/r
+  process.env.CYTV_ORIGIN_REPO = 'o/r';   // fork: the repository is pinned in helper/origin.js
   const mgr = require(path.join(helper, 'manager'));
   let m;   // the service reads its own version when it starts, so each scenario starts one
   const start = v => { m = mgr.create({ luna: async () => ({}), readConf: () => ({}), writeConf() {}, inputhook: { status: () => ({}), ensure() {} }, VERSION: v, pickerShown: () => 0 }); };

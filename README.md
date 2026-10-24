@@ -2,6 +2,9 @@
 
 # CleanYourTV for LG webOS
 
+> [!IMPORTANT]
+> **This is the sjelfull fork.** Install and update it as [FORK.md](FORK.md) says, not with the commands below.
+
 A fast home screen for rooted LG webOS TVs, with Live TV from your own playlist, an Inputs list on the Input key,
 picture notifications, optional on-device voice recognition and an optional debloat of LG's ads and telemetry.
 

@@ -7,16 +7,13 @@
 const fs = require('fs'), cp = require('child_process');
 const { fetch, cmp } = require('./manager');
 const D = '/media/developer/cleanyourtv', SVC = '/media/developer/apps/usr/palm/services/com.cleanyourtv.manager.service';
-const DEFAULT_REPO = 'lasharor/cleanyourtv-WebOS', TMP = '/tmp/cytv-self.ipk';
+const origin = require('./origin'), TMP = '/tmp/cytv-self.ipk';
 const ENV = Object.assign({}, process.env, { PATH: '/usr/bin:/usr/sbin:/bin:/sbin:' + (process.env.PATH || '') });
 const say = m => console.log(m);
 const readJson = (f, d) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (_) { return d; } };
 const installedVersion = () => { try { return (/const VERSION = '([^']+)'/.exec(fs.readFileSync(SVC + '/helper/helper.js', 'utf8')) || [])[1] || '0'; } catch (_) { return '0'; } };
-function releaseUrl() {
-  const c = readJson(D + '/config.json', {});
-  if (c.releasesUrl) return c.releasesUrl;
-  let src = ''; try { src = fs.readFileSync(D + '/source', 'utf8').trim().split(/\s+/)[0]; } catch (_) {}
-  return 'https://api.github.com/repos/' + (/^[\w.-]+\/[\w.-]+$/.test(src) ? src : DEFAULT_REPO) + '/releases/latest';
+function releaseUrl() {   // fork: D/source and config.json releasesUrl are ignored, see origin.js
+  return 'https://api.github.com/repos/' + origin.REPO + '/releases/latest';
 }
 async function latest() {
   const j = JSON.parse((await fetch(releaseUrl())).toString()), assets = {};

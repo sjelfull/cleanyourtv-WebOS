@@ -5,7 +5,7 @@ const nc = require('./netcompat'), { URL, URLSearchParams } = nc;
 const D = process.env.CYTV_DIR || '/media/developer/cleanyourtv';   // the environment variables are for tools/node8-check.js
 const SERVICE_DIR = process.env.CYTV_SERVICE_DIR || '/media/developer/apps/usr/palm/services/com.cleanyourtv.manager.service';
 const apiBase = () => process.env.CYTV_API || 'https://api.github.com';
-const DEFAULT_REPO = 'lasharor/cleanyourtv-WebOS';
+const origin = require('./origin');   // fork: the repository is pinned there
 const ENV = Object.assign({}, process.env, { PATH: '/usr/bin:/usr/sbin:/bin:/sbin:' + (process.env.PATH || '') });
 
 const semver = v => String(v || '0').replace(/^v/, '').split('.').map(n => parseInt(n, 10) || 0);
@@ -14,7 +14,7 @@ const readJson = (f, d) => { try { return JSON.parse(fs.readFileSync(f, 'utf8'))
 const sh = (cmd, ms) => new Promise(res => require('./diag').execFile('/bin/sh', ['-c', cmd], { env: ENV, timeout: ms || 60000, maxBuffer: 8 << 20 }, (e, out, err) => res({ ok: !e, out: String(out || ''), err: String(err || '') })));
 
 // GET a URL (follows redirects). Returns a Buffer, or with `file` streams to disk and resolves {sha256}.
-const allowHttp = () => { if (process.env.CYTV_API) return true; try { return !!JSON.parse(fs.readFileSync(D + '/config.json', 'utf8')).releasesUrl; } catch (_) { return false; } };   // a custom release source, for testing
+const allowHttp = () => !!process.env.CYTV_API;   // a mock release source, for testing (fork: config.json releasesUrl is ignored)
 function fetch(url, file, hops) {
   return new Promise((resolve, reject) => {
     if ((hops || 0) > 6) return reject(new Error('too many redirects'));
@@ -58,15 +58,8 @@ function create(ctx) {
   // publishes for a branch. The choice is the file D/channel, so install.sh can set it too.
   const TEST_TAG = /^test-[a-z0-9-]{1,60}$/;
   const channel = () => { try { const t = fs.readFileSync(D + '/channel', 'utf8').trim(); return TEST_TAG.test(t) ? t : ''; } catch (_) { return ''; } };
-  const baseRepo = () => {
-    const src = (() => { try { return fs.readFileSync(D + '/source', 'utf8').trim().split(/\s+/)[0]; } catch (_) { return ''; } })();
-    return apiBase() + '/repos/' + (/^[\w.-]+\/[\w.-]+$/.test(src) ? src : DEFAULT_REPO);
-  };
-  const repoUrl = () => {
-    const c = readConf();
-    if (c.releasesUrl) return c.releasesUrl;
-    return baseRepo() + (channel() ? '/releases/tags/' + channel() : '/releases/latest');
-  };
+  const baseRepo = () => apiBase() + '/repos/' + origin.REPO;   // fork: D/source and config.json releasesUrl are ignored
+  const repoUrl = () => baseRepo() + (channel() ? '/releases/tags/' + channel() : '/releases/latest');
   // the commit a build was made from (test builds only; a stable install has no BUILD file)
   const buildOf = f => { try { const b = fs.readFileSync(f, 'utf8').trim(); return /^[0-9a-f]{7,40}$/.test(b) ? b : ''; } catch (_) { return ''; } };
   const serviceBuild = () => buildOf(D + '/BUILD'), frontendBuild = () => buildOf(D + '/app/BUILD');

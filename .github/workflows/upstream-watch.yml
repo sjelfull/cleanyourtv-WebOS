@@ -1,0 +1,53 @@
+# Fork: once a day, looks for upstream commits that are not merged here yet and keeps one open issue that lists them.
+# It only reads code and writes issues, and uses no third-party actions. Merging is done by hand: tools/sync-upstream.sh.
+name: Upstream watch
+on:
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      UPSTREAM: lasharor/cleanyourtv-WebOS
+    steps:
+      - name: Compare with upstream and update the issue
+        run: |
+          set -eu
+          git clone -q --filter=blob:none "https://github.com/$REPO.git" fork && cd fork
+          gh label create upstream -R "$REPO" --color 0E8A16 --force >/dev/null
+          git remote add upstream "https://github.com/$UPSTREAM.git"
+          git fetch -q --no-tags upstream main
+          n=$(git rev-list --count HEAD..upstream/main)
+          issue=$(gh issue list -R "$REPO" --state open --label upstream --json number -q '.[0].number')
+          if [ "$n" = 0 ]; then
+            [ -z "$issue" ] || gh issue close "$issue" -R "$REPO" -c "Up to date with upstream."
+            exit 0
+          fi
+          base=$(git merge-base HEAD upstream/main)
+          # changes here can reach root on the TV or the update path, so they get a closer look
+          sensitive=$(git diff --name-only --no-renames "$base" upstream/main | grep -vE '^(docs/|site/|assets/|zensical\.toml$|[^/]+\.md$|\.github/ISSUE_TEMPLATE/)' || true)
+          rel=$(gh release view -R "$UPSTREAM" --json tagName -q .tagName 2>/dev/null || echo none)
+          {
+            echo "Upstream main has **$n** commit(s) that are not merged here. Latest upstream release: \`$rel\`."
+            echo
+            echo "Compare: https://github.com/$UPSTREAM/compare/${base}...main"
+            echo
+            echo "To merge: \`sh tools/sync-upstream.sh\` (opens a pull request), review it, merge, then \`sh tools/release.sh\`."
+            echo
+            if [ -n "$sensitive" ]; then
+              echo "### Code and data that reach the TV (read these)"
+              echo '```'; echo "$sensitive"; echo '```'
+              echo
+            fi
+            echo "### Commits ($n)"
+            echo '```'; git log --format='%h %s (%an, %as)' HEAD..upstream/main | head -100; echo '```'
+          } > body.md
+          if [ -n "$issue" ]; then gh issue edit "$issue" -R "$REPO" --body-file body.md
+          else gh issue create -R "$REPO" --title "Upstream has changes to review" --label upstream --body-file body.md; fi

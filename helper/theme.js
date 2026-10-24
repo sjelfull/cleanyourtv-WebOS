@@ -243,7 +243,7 @@ function resolve(t, accent) {
 }
 
 function create(ctx) {
-  const slug = () => (ctx.slug && ctx.slug()) || 'lasharor/cleanyourtv-WebOS';
+  const slug = () => (ctx.slug && ctx.slug()) || require('./origin').REPO;
   const base = () => baseUrl(slug(), ctx.ref && ctx.ref());
   const cur = () => { const c = (ctx.readConf().theme || {}); const all = load(); return { id: all[c.id] ? c.id : DEFAULT_ID, accent: hex(c.accent) || '', prev: c.prev && all[c.prev.id] ? { id: c.prev.id, accent: hex(c.prev.accent) || '' } : null }; };
   const resolved = () => { const c = cur(); return resolve(load()[c.id], c.accent); };
