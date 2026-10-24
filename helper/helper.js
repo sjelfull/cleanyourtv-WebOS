@@ -94,9 +94,8 @@ let voice = null;
 try { if (notify) voice = require('./voice').create({ notify, readConf, writeConf }); } catch (e) { console.error('voice module failed:', e.message); }
 inputhook.setVoiceKey(voiceKey);
 let theme = null;
-try { theme = require('./theme').create({ readConf, writeConf, slug: () => { try { const x = fs.readFileSync(DIR + '/source', 'utf8').trim().split(/\s+/)[0]; if (/^[\w.-]+\/[\w.-]+$/.test(x)) return x; } catch (_) {} return 'lasharor/cleanyourtv-WebOS'; },
-    // the branch of the themes folder: main, unless D/source names another one after the repository (only to try a theme before it is merged)
-    ref: () => { try { const x = fs.readFileSync(DIR + '/source', 'utf8').trim().split(/\s+/)[1]; if (/^[\w.\/-]{1,60}$/.test(x || '')) return x; } catch (_) {} return 'main'; } }); } catch (e) { console.error('theme module failed:', e.message); }
+try { theme = require('./theme').create({ readConf, writeConf, slug: () => require('./origin').REPO,   // fork: D/source is ignored
+    ref: () => require('./origin').REF }); } catch (e) { console.error('theme module failed:', e.message); }
 inputhook.setGuideKey && inputhook.setGuideKey(guideKey);
 let notifyApi = null;
 try { if (notify) notifyApi = require('./notifyapi').create({ notify, readConf, writeConf }); } catch (e) { console.error('notification api module failed:', e.message); }

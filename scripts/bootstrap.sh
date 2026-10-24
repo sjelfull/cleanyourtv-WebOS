@@ -85,7 +85,7 @@ if [ "$MODE" = install ]; then
   say "TV: ${model:-unknown model}, firmware ${fw:-?}, webOS SDK ${sdk:-?}"
   # the compatibility list: firmware known to work is set up without --force (a newer copy is fetched from the repository when possible)
   mkdir -p $D
-  COMPATREPO=$(cut -d' ' -f1 $D/source 2>/dev/null); [ -n "$COMPATREPO" ] || COMPATREPO=lasharor/cleanyourtv-WebOS
+  COMPATREPO=sjelfull/cleanyourtv-WebOS   # fork: pinned, D/source is ignored (see helper/origin.js)
   curl -fsSL -m 6 "https://raw.githubusercontent.com/$COMPATREPO/main/compat.json" -o /tmp/cytv-compat.json 2>/dev/null && node -e 'JSON.parse(require("fs").readFileSync("/tmp/cytv-compat.json","utf8"))' 2>/dev/null && cp /tmp/cytv-compat.json $D/compat.json
   COMPATNOTE=$($J compat "$fw" "$sdk" $D/compat.json $S/compat.json)
 
@@ -139,7 +139,6 @@ fi
 # ---- options (stored in config.json, changed later in the manager) ----
 $J options "$D/config.json" "$DEBLOAT" "$INPUTKEY"
 opt() { $J opt "$D/config.json" "$1"; }
-[ -n "$CYTV_REPO" ] && echo "$CYTV_REPO ${CYTV_REF:-main}" > $D/source
 [ "$MODE" = install ] && rm -f $D/DISABLE $D/DISABLE-DEBLOAT   # setting up selects our Home; an update keeps the choice
 
 # ---- boot scripts ----
